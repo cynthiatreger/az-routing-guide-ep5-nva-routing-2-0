@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ### [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
 ##
 # Episode #5: Chained NVAs & BGP
@@ -102,3 +103,7 @@ It’s not traffic from A to B only, B has to find its way back to A too.
 Hide in the tunnel 
 
 probably about ARS propagating VNET subnets not taking precedence on default VNET routing
+=======
+## [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
+# Episode #5: NVA Routing 2.0 with Azure Route Server, IPSec/VxLAN & BGP
+>>>>>>> 7080b138ff8b082c9644197eeb87d101abe76789
