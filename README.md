@@ -32,19 +32,53 @@ ARS
 unifies the control plane and data plane
 With an ARS, OS level routes can be dynamically programmed at the VM NIC level
 
++ Effective routes are transformed into prefiwes advetised in BGP (ex - VNET ranges advertised by ARS in BGP)
+
 - under the hood iBGP sessions with Virtual Network GWs for further VNG On-Prem to NVA On-Prem interconnectivity
+
+the ARS will trigger route propagation in its local VNET and the peered VNETS and will be subject
+The GW Transit anf GW route propagation settings do apply to ARS.
+ARS route propagation will be subject to the 
+The ARS route propagation impacts the same scope than a Virtula Network GW (local + peered VNETs)
+follows the same 
+
+ARS not in the data-path, works like a RR
+The ARS is NOT in the data path but will enable the routing information received from the BGP peering between the ARS and the CSR NVA to be added to the Hub and peered VNETs.
+
+ARS in the RouteServerSubnet
 
 check out Mays' [ARS MH](https://github.com/malgebary/Azure-Route-Server-MicroHack) covering commmon routing scenarios leveraging ARS to understand/get its full power "to simplify configuration, management, and deployment of the NVAs in the Virtual Network and how would that simplify routing within Azure and between Azure and on-premises."
 
-## Ep 3 topology and ARS
+[Adam's video on ARS placement](https://youtu.be/eKRuJPjCR7o)
 
-to illustrate the impact and power of ARS, ARS added in Ep3 setup, in which all the UDRs have been removed.
+## Ep 3 topology and ARS (simple NVA environment)
+
+
+to illustrate the impact and power of ARS, we will start with an Ep3 like environment
+- 1 hub VNET peered with 2 spokes 
+    - GW transit enabled for Spoke1
+    - GW route propagation disabled on Spoke1/subnet2 (Spoke1VM2)
+    - GW disabled on the Spoke2 peering (Spoke2VM)
+- Concentrator NVA for brnach connectivity
+- all the UDRs configured in the previous episodes have been removed, 
+- the 10/8 static route configured on the Concentrator and advertised to On-Prem removed
+
+=> Azure rerachability from the branches was enabled by a static 10/8 route advertised by the Concentrator to the OnPrem
+Episode 3: The static 10/8 supernet route covering the Azure environment and pointing to the subnet default gateway (10.0.10.1) is configured on the Concentrator NVA to be further advertised to the branches.
+=> not needed anymore
+
+ARS added in Ep3 setup, in which all the UDRs have been removed.
 
 ARS BGP peered with Concentrator NVA
 
-### Gw transit and gw rout propagation
+**IMAGE 1**
 
+with just ARS + BGP with Concentrator, the whole Episode 3 lab has been completed, the On-Prem reachability extended to the ARS VNET + the peered VNETs just like in VNG use case
+without any UDRs
 
+Gw transit and gw rout propagation are honored for NVA advertised prefixes as shown by the Eff routes of Spoke1VM2 and Spoke2VM + failed pings
+
+We have demonstrated GW route prop and GW Transit is honoured. For the rest of this episode, we will focus on Spoke1 only (GW Transit + GW route prop = ON)
 ## Chained NVAs and ARS
 
 ARS peer with FW?
@@ -63,6 +97,8 @@ no data-plane connectivity from FW to Concetrator, so back to AGAIN, use UDRs.
 
 -Alternatively, could ARS be used to infuence the return trffic? can , via route to VNET advertised by FW to ARS, ARS help force the On-prem traffic received on the cicnentrztor to be routed to the NVA?
 No
+https://learn.microsoft.com/en-us/azure/route-server/route-server-faq#can-i-use-azure-route-server-to-direct-traffic-between-subnets-in-the-same-virtual-network-to-flow-inter-subnet-traffic-through-the-nva
+
 ### try to push the Spoke VNET ranges to the NVA Effective routes?
  won't work as VNET ranges  learnt by direct VNET peering, takes precedence anyway over the ARS propagated routes.
 
@@ -92,7 +128,9 @@ and then BGP run within the tunnel
 
 
 ## 
-
+intermediate scenario,
+ARS for some routes
+UDRs for others, for example for mixing FW inspection and bypass depending on the spokes
 # Key take aways
 
 routing table and Effective routes alignment
@@ -103,7 +141,7 @@ It’s not traffic from A to B only, B has to find its way back to A too.
 Hide in the tunnel 
 
 probably about ARS propagating VNET subnets not taking precedence on default VNET routing
-=======
+
+video it's the end
+
 ## [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
-# Episode #5: NVA Routing 2.0 with Azure Route Server, IPSec/VxLAN & BGP
->>>>>>> 7080b138ff8b082c9644197eeb87d101abe76789
