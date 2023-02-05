@@ -48,7 +48,7 @@ To illustrate the impact and power of ARS, we will start with an Episode #3 like
 
 *All the *Route tables* and UDRs configured in the previous episodes have been removed, as well as the 10/8 static route configured on the Concentrator and advertised On-Prem for Azure reachability.*
 
-**IMAGE 1**
+<img width="1120" alt="image" src="https://user-images.githubusercontent.com/110976272/216853300-9a5e1a53-b066-4e37-99bb-6b6a5795a72e.png">
 
 ➡️ automatic route propagation and programmation both at the NC level and os level
 algines the effectives routes of the VMs in the ARS VNET and peered VNETs to the Conc NVA routing table.
