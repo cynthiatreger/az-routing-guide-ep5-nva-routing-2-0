@@ -141,6 +141,7 @@ In return, the On-Prem traffic destined to the Spokes (destination Spoke1VM = 10
 
 VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunneling technologies.
 
+<img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217105352-680017ce-f617-4c10-ad70-c526c78c6447.png">
 
 
  ### BGP between the NVA and the Cocnentrator
