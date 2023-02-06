@@ -61,9 +61,9 @@ For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit +
 
 # 5.3. Chained NVAs and ARS (Episode #4-like topology)
 
-In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is unavailable to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every single Spoke range and On-Prem prefix.
+In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is NOT available to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every single Spoke range and On-Prem prefix.
 
-Herewe will only address the FW inspection requirement. The FW bypass use case is left out of this lab.
+In this epsiode we will only address the FW inspection requirement. The FW bypass use case is left out of this lab.
 
 ## 5.3.1. Chained NVAs and direct ARS plugin (and UDRs...)
 
@@ -77,7 +77,7 @@ As the goal is to steer traffic through the FW NVA for inspection, we want the A
 
 (add FW NVA routing table)
 
-⚠️ As per the traceroutes, a routing loop has been created.
+⚠️ A routing loop has been created.
 
 To understand its origin, we will analyse the packet walk for traffic originated from Spoke1VM towards Branch1 (destination = 192.168.10.1): 
 1. As per the ARS programmed entry in Spoke1VM's *Effective routes*, traffic to On-Prem (192.168.0.0/16) is sent to the FW NVA NIC (10.0.0.5)
@@ -145,24 +145,29 @@ VxLAN encapsulation protocol is used below, but the same can be achieved with IP
 
 <img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217105352-680017ce-f617-4c10-ad70-c526c78c6447.png">
 
+add FW routing table
+
 And finally, end-to-end connectivity achieved, without any UDR;
 
 # Conclusion & Key Take-aways
 
 I hope this series was of interest to you and helped you have a better understanding of how routing in Azure is done. 
 
-The use cases addressed and solutions provided over the Episodes can of course be combined to provide intermediate scenarios:
+The use cases addressed and solutions provided over the Episodes can be combined to provide intermediate scenarios:
 - Leveraging ARS for some traffic while still keeping UDRs to implement FW bypass for some other traffic
-- Keeping it to static routing and UDRs between the NVAs because the On-Prem prefixes and Azure ranges exchanged are too few in regards of the relative complexity of a VxLAN/IpSec and BGP design or to avoid encapsulation & encryption overhead.
+- Keeping it to static routing and UDRs between the NVAs because the On-Prem prefixes and Azure ranges exchanged are too few in perspective of the relative complexity of a VxLAN/IpSec and BGP design or to avoid encapsulation & encryption overhead.
+- Deploying 2 Hub VNETs and use chained NVAs to provide connectivity between 2 Hub & Spoke environments like in [this lab](https://github.com/cynthiatreger/double-hub-vnet-and-ars)
 - etc
 
-And if you're interested in having a managed version of these deployments you can have a look at virtual WAN.
+*For a managed version of these deployments you can have a look at [Azure Virtual WAN](https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about).*
 
-And finally, let me share 3 key take-aways:
+And finally, let me share my 3 key take-aways:
 - always make sure your data plane (*Effective routes*) is aligned with the control-plane (NVA routing table)
 - Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
 - Consider the return traffic: it’s not traffic from A to B only, B has to find its way back to A too.
 
-video it's the end
+# Aknowledgement
+
+
 
 ## [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
