@@ -62,13 +62,13 @@ For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit +
 
 # 5.3. Chained NVAs and ARS (Episode #4-like topology)
 
-In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is unavailable to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every sigle Spoke range and On-Prem prefix.
+In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is unavailable to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every single Spoke range and On-Prem prefix.
 
 ## 5.3.1. Chained NVAs and direct ARS plugin
 
 ### On-Prem prefixes
 
-**IMAGE 2**
+<img width="1148" alt="image" src="https://user-images.githubusercontent.com/110976272/217000340-6da77cdb-fbbb-46e2-8f14-d6ed0b91d4c1.png">
 
 packet walk
 
