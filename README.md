@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ### [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
 ##
 # Episode #5: NVA Routing 2.0 with Azure Route Server, VxLAN (or IPSec) & BGP
@@ -102,17 +101,17 @@ From previous episodes we know now that UDRs would do that perfectly, and are [p
 
 Likewise, the Concentrator NVA has an ARS programmed route for On-Prem prefixes that should be overridden with a UDR to push the traffic up to the Concentrator OS.
 
-### 5.3.1.2. Az ranges? try to push the Spoke VNET ranges to the NVA Effective routes?
+### 5.3.1.3. What about the Azure VNET ranges?
 
 If you wonder whether ARS could be used to force via the FW NVA the On-Prem to Azure traffic (by having the FW NVA advertise to the ARS a route towards the VNET ranges) this won't work.
 
 ⚠️ ARS cannot be used to reprogram VNET ranges in the VMs *Effective routes*. Direct VNET peering takes precedence over the ARS route propagation, [even if the ARS propagated routes are more specific](https://learn.microsoft.com/en-us/azure/route-server/route-server-faq#can-i-use-azure-route-server-to-direct-traffic-between-subnets-in-the-same-virtual-network-to-flow-inter-subnet-traffic-through-the-nva)
 
-Afain, a UDR matching the Spoke ranges would be required on the Concentrator subnet.
+Again, a UDR matching the Spoke ranges would be required on the Concentrator subnet.
 
-### 5.3.1.3. UDR adjusted connectivity diagram
+### 5.3.1.4. UDR adjusted connectivity diagram
 
-**IMAGE 3**
+<img width="1142" alt="image" src="https://user-images.githubusercontent.com/110976272/217070251-f9a6e4d9-eb9a-4b41-91f8-4e3ff43a8bca.png">
 
 The routes programmed by the ARS and overridden by UDRs on both NVA become "*Invalid*".
 
