@@ -64,53 +64,57 @@ For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit +
 
 In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is unavailable to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every single Spoke range and On-Prem prefix.
 
+Herewe will only address the FW inspection requirement. The FW bypass use case is left out of this lab.
+
 ## 5.3.1. Chained NVAs and direct ARS plugin
 
-### On-Prem prefixes
+Let's look at the impact of adding an ARS in our previous chained NVA test environment. 
+
+### 5.3.1.1. Initial connectivity diagram
+
+As the goal is to steer traffic through the FW NVA for inspection, we want the ARS to program the VMs so their *Effective routes* for On-Prem prefixes point to the FW NVA. Having Next-Hop = FW NVA (10.0.0.5) automatically set for On-Prem connectivity means the ARS is peered with the FW NVA and is receiving these On-Prem prefixes via BGP.
 
 <img width="1148" alt="image" src="https://user-images.githubusercontent.com/110976272/217000340-6da77cdb-fbbb-46e2-8f14-d6ed0b91d4c1.png">
 
-packet walk
+(add FW NVA routing table)
 
-warning trceroute => loop
-the ARS programs the Effective routes of the FW NVA with a route for the branches to itself: packets managed by NVA rouitng tablr with NH = Concentrator , recursive lookup sends to FW NIC, and here FW NIC sends up to the FW OS
- etc
+⚠️ As per the traceroutes, a routing loop has been created.
 
-This is not what we want.
-need to reprogram the FW NIC with a route towards branches pointing to the Cpncentrator 
+To understand its origin, we will analyse the packet walk for traffic originated from Spoke1VM towards Branch1 (destination = 192.168.10.1): 
+1. As per the ARS programmed entry in Spoke1VM's *Effective routes*, traffic to On-Prem (192.168.0.0/16) is sent to the FW NVA NIC (10.0.0.5)
+2. The FW NVA NIC has the same ARS programmed entry, pointing to itself
+3. The FW NVA NIC forwards the traffic the FW NVA OS where it is evaluated against the FW NVA routing table
+4. The FW NVA routing table has a route for 192.168.0.0/16, Next-Hop = 10.0.10.4 (the Concentrator NVA), and has a route for this Next-Hop pointing to its NIC. 5. Recursive lookup will result in the traffic being sent back to the FW NVA NIC, that will reforward it up to the FW NVA OS etc.
 
-btw, need the same route on the concentrator because at the moment concentraote also has branches reachable through FW in its Effective routes
+This is not what we want. We need to reconfigure the FW NVA NIC with a route (UDR) towards the On-Prem branches pointing to the Concentrator NVA NIC (10.0.10.4).
 
-Concentrator/FW BGP tp push to the ARS the On-Prem routzs dynamically but then ARS floods its local and peered vnets with these routes and programs them in the VM NIC's Effective routes, with NH being its BGP peered NVA. 
+The Concentrator NVA was also in the ARS reach and therefore has also a programmed route for the On-Prem branches pointing back at the FW NVA. A similar UDR will be required here as well.
 
-finally, return path (OnPrem => Az): according to the Effective routes of Conc NVA, direct forward to the Spoke1VNET, no FW transit, so that needs to be adjusted too
+Finally, when looking at the return path (from OnPrem to the Azure VNETs) and as per the Concentrator NVA *Effective routes*, traffic is forwarded directly to the Spoke VNETs, bypassing the FW NVA, which is not what we want either.
 
-introdcing ARS with chained NVAs, the  BGP advertised On-Prem prefixes from the Conc to the FW to the ARS is useful for the spokes but creates issues in the hub VNET that need to be corrected
+Introducing ARS with chained NVAs is not as smooth as with a single NVA. The On-Prem prefixes ppropagated via BGP from the Concentrator NVA to the FW NVA to the ARS is still useful for the Spoke VNETs but create issues in the hub VNET that need to be corrected.
 
-### ARS behaviour adjusted with UDRs for OnPrem prefixes
-ARS's behaviour needs to be contained:
-From episodes we know now that UDRs would do that perfectly: with a UDR towards the On-Prem branch prefixes and pointing to the Concentrator NVA configured on the FW NVA, the ARS propagated route causing the loop on the FW NVA NIC would get overriden and packets would be forwarded to the Concentrator.
+### 5.3.1.2. ARS behaviour adjusted with UDRs for OnPrem prefixes
 
-But likewise, the Concentrator at the moment has in its Effective routes an entry for the On-Prem branches programmed by the ARS with NH = FW NVA. Here too a UDR is required to force the traffic up the NIC to the Concentrator OS.
+The ARS behaviour needs to be contained. 
 
+From previous episodes we know now that UDRs would do that perfectly, and are [prefered over ARS programmed routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview#how-azure-selects-a-route): with a UDR configured on the FW NVA towards the On-Prem branch prefixes (192.168.0.0/16) and pointing to the Concentrator NVA (10.0.10.4), the ARS propagated route causing the loop on the FW NVA NIC would get overridden and packets would be forwarded to the Concentrator.
 
-### Az ranges? try to push the Spoke VNET ranges to the NVA Effective routes?
-foreign prefixes?
-use of ARS to force via FW to infuence the return trffic? can , via route to VNET advertised by FW to ARS, ARS help force the On-prem traffic received on the cicnentrztor to be routed to the NVA?
-static route FW for spoke subnet pointing to itself
-No
-https://learn.microsoft.com/en-us/azure/route-server/route-server-faq#can-i-use-azure-route-server-to-direct-traffic-between-subnets-in-the-same-virtual-network-to-flow-inter-subnet-traffic-through-the-nva
+Likewise, the Concentrator NVA has an ARS programmed route for On-Prem prefixes that should be overridden with a UDR to push the traffic up to the Concentrator OS.
 
- won't work as VNET ranges learnt by direct VNET peering, takes precedence anyway over the ARS propagated routes.
- if longer prefix?
+### 5.3.1.2. Az ranges? try to push the Spoke VNET ranges to the NVA Effective routes?
 
-so again, a UDR matching the Spoke ranges (no supernet because of LPM) on the Concentrator subnet would be needed
+If you wonder whether ARS could be used to force via the FW NVA the On-Prem to Azure traffic (by having the FW NVA advertise to the ARS a route towards the VNET ranges) this won't work.
 
+⚠️ ARS cannot be used to reprogram VNET ranges in the VMs *Effective routes*. Direct VNET peering takes precedence over the ARS route propagation, [even if the ARS propagated routes are more specific](https://learn.microsoft.com/en-us/azure/route-server/route-server-faq#can-i-use-azure-route-server-to-direct-traffic-between-subnets-in-the-same-virtual-network-to-flow-inter-subnet-traffic-through-the-nva)
+
+Afain, a UDR matching the Spoke ranges would be required on the Concentrator subnet.
+
+### 5.3.1.3. UDR adjusted connectivity diagram
 
 **IMAGE 3**
 
-routes advertised rom ARS become invalid etc
-
+The routes programmed by the ARS and overridden by UDRs on both NVA become "*Invalid*".
 
 ### Packet walk:
 Spoke1=>OnPrem (follow the 192.68.0./16
@@ -203,6 +207,8 @@ makes sense to receive thiese On-Prem branches forn the Cpncentrator via BGP too
 and then ARS programs them in the VM Effective routes so the spokes  will know onprem reachable via FW
 
 => "Before ARS, users had to create a User Defined Route (UDR) to steer traffic to the NVA, and needed to **manually update the routing table on the NVA when VNET addresses got updated**" TO CHECK
+
+Traffic from a virtual machine (VM) is sent to a destination based on the effective routes associated with a network interface (NIC).
 
 video it's the end
 
