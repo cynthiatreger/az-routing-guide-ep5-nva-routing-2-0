@@ -65,7 +65,7 @@ In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger
 
 Herewe will only address the FW inspection requirement. The FW bypass use case is left out of this lab.
 
-## 5.3.1. Chained NVAs and direct ARS plugin
+## 5.3.1. Chained NVAs and direct ARS plugin (and UDRs...)
 
 Let's look at the impact of adding an ARS in our previous chained NVA test environment. 
 
@@ -97,75 +97,52 @@ Introducing ARS with chained NVAs is not as smooth as with a single NVA. The On-
 
 The ARS behaviour needs to be contained. 
 
-From previous episodes we know now that UDRs would do that perfectly, and are [prefered over ARS programmed routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview#how-azure-selects-a-route): with a UDR configured on the FW NVA towards the On-Prem branch prefixes (192.168.0.0/16) and pointing to the Concentrator NVA (10.0.10.4), the ARS propagated route causing the loop on the FW NVA NIC would get overridden and packets would be forwarded to the Concentrator.
+From previous episodes we know now that UDRs would do that perfectly, and are [preferred over ARS programmed routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview#how-azure-selects-a-route): with a UDR configured on the FW NVA towards the On-Prem branch prefixes (192.168.0.0/16) and pointing to the Concentrator NVA (10.0.10.4), the ARS propagated route causing the loop on the FW NVA NIC would get overridden and packets would be forwarded to the Concentrator.
 
 Likewise, the Concentrator NVA has an ARS programmed route for On-Prem prefixes that should be overridden with a UDR to push the traffic up to the Concentrator OS.
 
-### 5.3.1.3. What about the Azure VNET ranges?
+### 5.3.1.3. Can ARS influence the Azure VNET ranges?
 
-If you wonder whether ARS could be used to force via the FW NVA the On-Prem to Azure traffic (by having the FW NVA advertise to the ARS a route towards the VNET ranges) this won't work.
+If you wonder whether ARS could be used to force via the FW NVA the traffic from On-Prem to Azure (by having the FW NVA advertise to the ARS a route towards the VNET ranges) this won't work.
 
 ⚠️ ARS cannot be used to reprogram VNET ranges in the VMs *Effective routes*. Direct VNET peering takes precedence over the ARS route propagation, [even if the ARS propagated routes are more specific](https://learn.microsoft.com/en-us/azure/route-server/route-server-faq#can-i-use-azure-route-server-to-direct-traffic-between-subnets-in-the-same-virtual-network-to-flow-inter-subnet-traffic-through-the-nva)
 
-Again, a UDR matching the Spoke ranges would be required on the Concentrator subnet.
+Again, a UDR matching the Spoke ranges would be required on the FW and Concentrator subnets.
 
 ### 5.3.1.4. UDR adjusted connectivity diagram
 
 <img width="1142" alt="image" src="https://user-images.githubusercontent.com/110976272/217070251-f9a6e4d9-eb9a-4b41-91f8-4e3ff43a8bca.png">
 
+The targeted connectivity has been achieved.
+
 The routes programmed by the ARS and overridden by UDRs on both NVA become "*Invalid*".
 
-### Packet walk:
-Spoke1=>OnPrem (follow the 192.68.0./16
-Spoke1VM NIC (Eff route: ARS programmed entry) => FW NVA NIC (EFF routes: UDR entry) => Conc NVA NIC (UDR entry) => Conc NVA OS (routing table) => Branches
-- traffic destination matched against Spoke1VM's NIC Eff R => ARS programmed a 192.168/16 routes to FW, packets send over Az platform to FW NIC
-- FW NIC Eff routes contain a UDR for the branch prefixes so packet forwarded to NH specified = Conc
-- Packets reach the con NIC, eff route with UDR to its own IP, packets get processed by the OS, routing table consulted: traffic forwarded over the tunnels to the branches (IPSEc or SDWAN whatver)
+Let's do the packet walk again:
+- Spoke1VM => Branch1 (destination = 192.168.10.1)
+1. As per the ARS programmed entry in Spoke1VM's *Effective routes*, traffic to On-Prem (192.168.0.0/16) is sent to the FW NVA NIC (10.0.0.5)
+2. The FW NVA NIC has now a *User* entry for the branch prefixes pointing to the Concentrator NVA NIC (10.0.10.4)
+3. The Concentrator NVA NIC forwards the traffic to the Concentrator NVA OS where it is evaluated against the Concentrator NVA routing table
+4. Traffic is forwarded over SDWAN or IPSec to the branches.
+- On-Prem => Spoke1VM (destination = 10.1.1.4): the Concentrator routing table directs the traffic towards Spoke1VM down to its NIC, where there is a *User* entry pointing to the FW NVA NIC, where default VNET peering routing will take the traffic to the Spoke1VM directly.
 
-OnPrem=>Spoke (we rtack the Spoke1VM subnet)
-- Conc OS (routing table) => Conc NIC (UDR) => FW NIC => Spoke1VM NIC
+Compared to the Solution proposed in Episode #4, the ARS limits the need of UDRs to the FW NVA and the Conczentrator NVA only. However this solution goes against the dynamic routing principles of BGP, requiring to enforce all the VNET ranges and the BGP learnt On-Prem prefixes with UDRs, in numbers that can quickly build up.
 
-### conclusion
-!it worksn, reduces the need of UDRs to the Hub VNET only, but goes against the dynamic routing concepts of BGP, requiring again to enforce all the foreign dynamically leanrt routes with static routes at the NIC level...
+## 5.3.2. Chained NVAs, ARS and VxLAN
 
-## tunneling techniques
+### 5.3.2.1. Tunneling technique
 
-The ARS steers traffic to its peered NVA. In the case of chained NVAs, there is an additional hop to consider that consists of pushing that steered traffic one hop further, from the FW NVA to the Conc NVA. 
-UDRs are one way to do it as they enable the reachability over this addiitonal hop.
-Although ARS here helped limiting the need of UDRs to only the FW and the Conc
-For larger deployments with 10s or even a few hundred Spoke ranges, and On-Prem prefixes that cannot always be aggregated easily to RFC1918, this can again quickly become out of control
+Instead of implementing UDRs to provide data-plane connectivity between the FW NVA and the Concentrator NVA for all the individual spoke ranges and On-Prem prefixes, we can also consider using a tunnel between these 2 NVAs and between which there is already default VNET connectivity. BGP would then be established inside this tunnel.
 
-UDRs to override every on-prem prefixe programmed by ARS
+Let's go back to the state where the ARS only was deployed with no UDRs for Spoke or On-Prem connectivity. The routing loop between the FW NVA NIC and the FW NVA OS was caused by the FW NVA NIC being programmed by the ARS to take the 192.168.0.0/16 On-Prem traffic to the FW NVA OS, but then having the FW NVA routing table sending the same 192.168.0.0/16 On-Prem traffic back to its NIC).
 
-Another way to address routing over this addiitonal hop is to use tunneling between the chained NVAs, like IPSec or VxLAN, 
-The FW NVA would encapsulate traffic from the spokes to the Branches befofe sending them to the Conc.
-The Conc would encapsulate traffic from the Branches to the Spokes before sending them to the FW.
+When using encapsulation, the On-Prem traffic is hidden inside packets having now the Concentrator tunnel endpoint (10.0.10.4) as destination, that would be ignored by the ARS programmed route, and be forwarded following to direct VNET connectivity to the Concentrator NVA for decapsulation and further On-Prem processing.
 
-Instead of ensuring data-plane connectivity for all the individual spoke ranges and On-Prem prefixes between the FW NVA and the Cn NVA, we would just have to establish data-plane connecitivty between the 2 tunnel endpoints on each NVA (1 UDR)
+In return, the On-Prem traffic destined to the Spokes (destination Spoke1VM = 10.1.1.4) is encapsulated by the Concentrator NVA, send to its NIC with the destination being now the FW tunnel endpoint (10.0.0.5) for which there is also direct VNET connectivity.
 
-whatever branch dest or az src always encaps in same source dest (tunnel)
+VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunneling technologies.
 
- 
-Let's go back to ARS only prgrammed routes, and the loop on the FW NIC caused by the NIC being programmed by ARS to push the OnPrem traffic up to its OS, but then having the FW routing table matching the On-Prem dest + recursive lookup on NH = the Conc + sending it back down to the NIC.
 
-what if NH = tunnel dest
-tunnel dest 
 
-once attracted to the ARS peered NVA, the UDRs configured  
-
-the need of UDRs here comes from the fact that the NH programmed by the ARS is not the last NH for the dest prefixes in the data plane
-
-ARS propagates prefixes received over BGP from its neighbors (here FW NVA) to its local VBNET and the peered VNETs and programs the Eff routes of each VM with the destination prefixes, NH = its BGP neighbor
-
-Eff routes programmation done by ARS for the propagated prefixes
-results in traffic the traffic to the peered NVA
-
-unless we use encaps technique to trick the azure platform
-like IPSec or VxLAN create a tunnel between 2 routing devices, 2 endpoints in the local VNET (direct connectivity between them on the data plane), here our NVAs.
-having a tunnel to avoid the 
-
-and then BGP run within the tunnel
-///
  ### BGP between the NVA and the Cocnentrator
 
  Let's now focus on the BGP route exchanges between the FW NVA and the Concentrator NVA:
@@ -190,7 +167,6 @@ routing table and Effective routes alignment
 Consider return traffic
 It’s not traffic from A to B only, B has to find its way back to A too.
 
-Hide in the tunnel 
 
 probably about ARS propagating VNET subnets not taking precedence on default VNET routing
 
