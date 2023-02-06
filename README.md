@@ -34,9 +34,9 @@ The ARS takes the control over from the Azure Virtual Network Gateways if any, a
 
 In this episode we are going to address one of the many solutions ARS provides. If you would like to find out more about the routing scenarios leveraging ARS, please check out Mays' [ARS MicroHack](https://github.com/malgebary/Azure-Route-Server-MicroHack). 
 
-Adam's [video on ARS placement](https://youtu.be/eKRuJPjCR7o) has also been a great support.
+There is also Adam's great [video on ARS placement](https://youtu.be/eKRuJPjCR7o), for which I probably owe 50% of the current views. 
 
-# 5.2. Episode #3 topology (single NVA) and ARS
+# 5.2. Single NVA and ARS (Episode #3-like topology)
 
 To illustrate the impact and power of ARS, we will start with an Episode #3 like environment, updated with an ARS: 
 - 1 Hub VNET peered with 2 Spokes (Spoke1 and Spoke2)
@@ -60,27 +60,11 @@ The whole Episode #3 lab has been completed in one step: On-Prem reachability ha
 
 For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit + GW route prop = ON)
 
-# 5.3. Episode #4 topology (chained NVAs) and ARS
+# 5.3. Chained NVAs and ARS (Episode #4-like topology)
 
-# recap episode 4 & constraints
+In chained NVAs scenarios (like in [Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)), we have seen that the routing information shared between the 2 NVAs OS is unavailable to the NVAs *Effective routes*: the potential benefit of running dynamic routing (BGP) between the NVAs is taken away by the heaviness of UDRs required globally (Spoke subnets, FW subnet, Concentrator subnet), for every sigle Spoke range and On-Prem prefix.
 
-In the previous [episode] we enabled FW inspection and connectivity end-to-end between Azure and branches connected to a Concentrator. 
-
-Although the routing between the FW NVA and the Concentrator NVA was well implemented (static routes or BGP), we demonstrated that OS-level valid routing was not enough, providing control-plane connectivity only. 
-
-The NIC *Effective routes* of all the VMs in the local and peered VNETs had to be aligned to the NVA routing tables to steer traffic through the FW and finally achieve data-plane connectivity:
-- UDRs configueed on every subnet
-- different *Route tables* per environemnt (Spoke, FW NVA, Concentrator NVA) to steer traffic to the NVA - no central point/device of configuration 
-
-if 2 peerings - ECMP
-ARS peer with FW?
-
-FW advertises to the ARS the On-Prem branches
-makes sense to receive thiese On-Prem branches forn the Cpncentrator via BGP too.
-
-and then ARS programs them in the VM Effective routes so the spokes  will know onprem reachable via FW
-
-### ARS behaviour 
+## 5.3.1. Chained NVAs and direct ARS plugin
 
 ### On-Prem prefixes
 
@@ -209,6 +193,14 @@ probably about ARS propagating VNET subnets not taking precedence on default VNE
 
 simplify implem and operation / deployment, configuration & mgmt
 
+
+if 2 peerings - ECMP
+ARS peer with FW?
+
+FW advertises to the ARS the On-Prem branches
+makes sense to receive thiese On-Prem branches forn the Cpncentrator via BGP too.
+
+and then ARS programs them in the VM Effective routes so the spokes  will know onprem reachable via FW
 
 => "Before ARS, users had to create a User Defined Route (UDR) to steer traffic to the NVA, and needed to **manually update the routing table on the NVA when VNET addresses got updated**" TO CHECK
 
