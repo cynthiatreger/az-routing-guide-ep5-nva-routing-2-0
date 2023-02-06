@@ -50,15 +50,15 @@ To illustrate the impact and power of ARS, we will start with an Episode #3 like
 
 <img width="1120" alt="image" src="https://user-images.githubusercontent.com/110976272/216853300-9a5e1a53-b066-4e37-99bb-6b6a5795a72e.png">
 
-➡️ automatic route propagation and programmation both at the NC level and os level
-algines the effectives routes of the VMs in the ARS VNET and peered VNETs to the Conc NVA routing table.
+The whole Episode #3 lab has been completed in one step: On-Prem reachability has been extended to the ARS VNET and its the peered VNETs (like a Virtual Network Gateway would do), without any UDRs. 
 
-with just ARS + BGP with Concentrator, the whole Episode 3 lab has been completed, the On-Prem reachability extended to the ARS VNET + the peered VNETs just like in VNG use case
-without any UDRs
+➡️ With just ARS and BGP runnig with the Concentrator we obtained automatic route propagation and programmation both at the NIC level and OS level: 
+- The effectives routes of the VMs in the ARS VNET and peered VNETs contain the Concentrator NVA's Branch prefixes
+- The Concentrator NVA routing table contains the appropriate VNETs ranges
 
-Gw transit and gw rout propagation are honored for NVA advertised prefixes as shown by the Eff routes of Spoke1VM2 and Spoke2VM + failed pings
+*GW transit* and *GW route propagation* are honored for NVA advertised prefixes as shown by the routes advertised from the ARS to the Concentrator NVA (Spoke2 range missing) and the *Effective routes* of Spoke1VM2 and Spoke2VM and confirmed by the failed pings.
 
-We have demonstrated GW route prop and GW Transit is honoured. For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit + GW route prop = ON)
+For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit + GW route prop = ON)
 
 # 5.3. Episode #4 topology (chained NVAs) and ARS
 
