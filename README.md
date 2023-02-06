@@ -139,52 +139,29 @@ When using encapsulation, the On-Prem traffic is hidden inside packets having no
 
 In return, the On-Prem traffic destined to the Spokes (destination Spoke1VM = 10.1.1.4) is encapsulated by the Concentrator NVA, send to its NIC with the destination being now the FW tunnel endpoint (10.0.0.5) for which there is also direct VNET connectivity.
 
-VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunneling technologies.
+VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunneling technologies*.
+
+* *Make sure to check the potential performance and/or throughput limitation of the selected tunneling technology.*
 
 <img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217105352-680017ce-f617-4c10-ad70-c526c78c6447.png">
 
+And finally, end-to-end connectivity achieved, without any UDR;
 
- ### BGP between the NVA and the Cocnentrator
+# Conclusion & Key Take-aways
 
- Let's now focus on the BGP route exchanges between the FW NVA and the Concentrator NVA:
+I hope this series was of interest to you and helped you have a better understanding of how routing in Azure is done. 
 
-- FW NVA:
-    - advertises via BGP the specific Spoke1 VNET range (10.1.0.0/16) to the Concentrator NVA
-    - learns via BGP the On-Prem branch prefixes supernet (192.168.0.0/16) from the Concentrator NVA: Next-Hop = 10.0.10.4
+The use cases addressed and solutions provided over the Episodes can of course be combined to provide intermediate scenarios:
+- Leveraging ARS for some traffic while still keeping UDRs to implement FW bypass for some other traffic
+- Keeping it to static routing and UDRs between the NVAs because the On-Prem prefixes and Azure ranges exchanged are too few in regards of the relative complexity of a VxLAN/IpSec and BGP design or to avoid encapsulation & encryption overhead.
+- etc
 
-- Concentrator NVA:
-    - advertises via BGP the OnPrem branch prefixes supernet (192.168.0.0/16) to the FW NVA
-    - learns the Spoke1 VNET range and FW NVA range via BGP from the FW NVA: Next-Hop = 10.0.0.5
+And if you're interested in having a managed version of these deployments you can have a look at virtual WAN.
 
-
-## 
-intermediate scenario,
-ARS for some routes
-UDRs for others, for example for mixing FW inspection and bypass depending on the spokes
-# Key take aways
-
-routing table and Effective routes alignment
-
-Consider return traffic
-It’s not traffic from A to B only, B has to find its way back to A too.
-
-
-probably about ARS propagating VNET subnets not taking precedence on default VNET routing
-
-simplify implem and operation / deployment, configuration & mgmt
-
-
-if 2 peerings - ECMP
-ARS peer with FW?
-
-FW advertises to the ARS the On-Prem branches
-makes sense to receive thiese On-Prem branches forn the Cpncentrator via BGP too.
-
-and then ARS programs them in the VM Effective routes so the spokes  will know onprem reachable via FW
-
-=> "Before ARS, users had to create a User Defined Route (UDR) to steer traffic to the NVA, and needed to **manually update the routing table on the NVA when VNET addresses got updated**" TO CHECK
-
-Traffic from a virtual machine (VM) is sent to a destination based on the effective routes associated with a network interface (NIC).
+And finally, let me share 3 key take-aways:
+- always make sure your data plane (*Effective routes*) is aligned with the control-plane (NVA routing table)
+- Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
+- Consider the return traffic: it’s not traffic from A to B only, B has to find its way back to A too.
 
 video it's the end
 
