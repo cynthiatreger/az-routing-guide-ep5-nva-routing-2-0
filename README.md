@@ -25,13 +25,13 @@ The [Azure Route Server](https://learn.microsoft.com/en-us/azure/route-server/ov
 When deployed, the ARS can run BGP with an NVA and as a result will dynamically propagate and program the routing information received from this NVA in the *Effective routes* of all the VMs in the local and peered VNETs.
 The ARS also works the other way round and advertises these VNET ranges to its BGP-peered NVA.
 
-When the ARS is used in a VNET with an Azure Virtual Network Gateway (VPN or ER), iBGP is automatically run between them to provide, if required, branch-to-branch transit (OFF by default).
+When ARS is used in a VNET with an Azure Virtual Network Gateway (VPN or ER), iBGP is automatically run between them to provide, if required, branch-to-branch transit (OFF by default).
 
-The ARS takes over the control from the Azure Virtual Network Gateways if any, and becomes the new controler of the Azure scope. Consequently, the *GW Transit* and *GW route propagation* settings apply to ARS, as we will see in the next section.
+The ARS takes over the control from the Azure Virtual Network Gateways if any, and becomes the new controller of the Azure scope. Consequently, the *GW Transit* and *GW route propagation* settings apply to ARS, as we will see in the next section.
 
 ⚠️ Please note the ARS is NOT in the data-path. For non-Azure-native scenarios, the ARS is paired with an NVA, and then attracts and forwards traffic through this NVA.
 
-In this episode we are going to address one of the many solutions ARS provides. If you would like to find out more about the routing scenarios leveraging ARS, please check out Mays' [ARS MicroHack](https://github.com/malgebary/Azure-Route-Server-MicroHack). There is also Adam's great [video on ARS placement](https://youtu.be/eKRuJPjCR7o), for which I probably owe 50% of the current views. 
+In this episode we are going to address one of the many solutions ARS provides. If you would like to find out more about the routing scenarios leveraging ARS, please check out [Mays](https://github.com/malgebary)' [ARS MicroHack](https://github.com/malgebary/Azure-Route-Server-MicroHack). There is also [Adam](https://github.com/adstuart)'s great [video on ARS placement](https://youtu.be/eKRuJPjCR7o), for which I probably owe 50% of the current views. 
 
 # 5.2. Single NVA and ARS (Episode #3-like topology)
 
@@ -71,9 +71,7 @@ Let's look at the impact of adding an ARS in our previous chained NVA test envir
 
 As the goal is now to steer traffic through the FW NVA for inspection, we want the ARS to program the VMs so their *Effective routes* for On-Prem prefixes point to the FW NVA. Having Next-Hop = FW NVA (10.0.0.5) automatically set for On-Prem connectivity means the ARS is peered with the FW NVA and is receiving these On-Prem prefixes via BGP.
 
-<img width="1148" alt="image" src="https://user-images.githubusercontent.com/110976272/217000340-6da77cdb-fbbb-46e2-8f14-d6ed0b91d4c1.png">
-
-(add FW NVA routing table)
+<img width="1120" alt="image" src="https://user-images.githubusercontent.com/110976272/217202668-a6599aa3-46ee-4d87-81a7-12a00efbf85e.png">
 
 ⚠️ A routing loop has been created.
 
