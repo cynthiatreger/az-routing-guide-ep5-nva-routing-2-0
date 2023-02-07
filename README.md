@@ -81,14 +81,11 @@ As the goal is now to steer traffic through the FW NVA for inspection, we want t
 
 To understand its origin, we will analyse the packet walk for traffic originated from Spoke1VM towards Branch1 (destination = 192.168.10.1): 
 1. As per the ARS programmed entry in Spoke1VM's *Effective routes*, traffic to On-Prem (192.168.0.0/16) is sent to the FW NVA NIC (10.0.0.5)
-2. The FW NVA NIC has the same ARS programmed entry, pointing to itself
-3. The FW NVA NIC forwards the traffic the FW NVA OS where it is evaluated against the FW NVA routing table
-4. The FW NVA routing table has a BGP route for 192.168.0.0/16, Next-Hop = 10.0.10.4 (the Concentrator NVA), and has a route for this Next-Hop pointing to its NIC. 
-5. Recursive lookup will result in the traffic being sent back to the FW NVA NIC, that will reforward it up to the FW NVA OS etc 🔁
+2. The FW NVA NIC forwards the traffic the FW NVA OS where it is evaluated against the FW NVA routing table
+3. The FW NVA routing table has a BGP route for 192.168.0.0/16, Next-Hop = 10.0.10.4 (the Concentrator NVA), and has a route for this Next-Hop pointing to its NIC. 
+4. Recursive lookup will result in the traffic being sent back to the FW NVA NIC, that will reforward it up to the FW NVA OS etc 🔁
 
 This is not what we want. We need to reconfigure the FW NVA NIC with a UDR towards the On-Prem branches pointing to the Concentrator NVA NIC (10.0.10.4).
-
-The Concentrator NVA was also in the scope of the ARS and therefore has also a programmed route for the On-Prem branches pointing back at the FW NVA. A similar UDR will be required here as well.
 
 Finally, when looking at the return path (from OnPrem to the Azure VNETs) and as per the Concentrator NVA *Effective routes*, traffic is forwarded based on direct peering connectivity directly to the Spoke VNETs, bypassing the FW NVA, which is not what we want either.
 
@@ -97,8 +94,6 @@ Finally, when looking at the return path (from OnPrem to the Azure VNETs) and as
 ### 5.3.1.2. ARS behaviour adjusted with UDRs for OnPrem prefixes
 
 From previous episodes we know now that UDRs would do that perfectly, plus [UDRs are preferred over ARS programmed routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview#how-azure-selects-a-route): with a UDR configured on the FW NVA towards the On-Prem branch prefixes (192.168.0.0/16) and pointing to the Concentrator NVA (10.0.10.4), the ARS propagated route causing the loop on the FW NVA NIC would get overridden and packets would be forwarded to the Concentrator.
-
-Likewise, the Concentrator NVA has an ARS programmed route for On-Prem prefixes that should be overridden with a UDR to push the traffic up to the Concentrator OS.
 
 ### 5.3.1.3. Can ARS influence the Azure VNET ranges?
 
