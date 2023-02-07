@@ -158,7 +158,7 @@ The use cases addressed and solutions provided over the episodes can be combined
 
 And finally, let me share my 3 key take-aways:
 - Always make sure your data plane (*Effective routes*) is aligned with the control-plane (NVA routing table)
-- Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
 - Consider the return traffic: it’s not traffic from A to B only, B has to find its way back to A too.
+- Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
 
 ## [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
