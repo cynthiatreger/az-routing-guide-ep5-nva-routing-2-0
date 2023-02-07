@@ -108,7 +108,7 @@ If you wonder whether ARS could be used to force via the FW NVA the traffic from
 
 Again, a UDR matching the Spoke ranges would be required on the FW and Concentrator subnets.
 
-### 5.3.1.4. UDR adjusted connectivity diagram
+### 5.3.1.4. UDR-adjusted connectivity diagram
 
 <img width="1096" alt="image" src="https://user-images.githubusercontent.com/110976272/217194273-5c5aec38-b95c-4e51-823e-aa6a5a886dbd.png">
 
