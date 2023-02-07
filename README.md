@@ -128,8 +128,6 @@ Compared to the solution proposed in Episode #4, the ARS manages the Spoke VMs r
 
 ## 5.3.2. Chained NVAs, ARS and VxLAN
 
-### 5.3.2.1. Tunnelling technique
-
 Instead of implementing UDRs to provide data-plane connectivity between the FW NVA and the Concentrator NVA for all the individual Spoke ranges and On-Prem prefixes, we can also consider using a tunnel between these 2 NVAs and between which there is already default VNET connectivity. BGP will get established inside this tunnel.
 
 Let's go back to the state where the ARS only was deployed, with no UDRs for Spoke or On-Prem connectivity. The routing loop between the FW NVA NIC and the FW NVA OS was caused by the FW NVA NIC being programmed by the ARS to take the 192.168.0.0/16 On-Prem traffic to the FW NVA OS, but then having the FW NVA routing table sending the same 192.168.0.0/16 On-Prem traffic back to its NIC).
