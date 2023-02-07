@@ -140,9 +140,7 @@ VxLAN encapsulation protocol is used below, but the same can be achieved with IP
 
 * *Make sure to check the potential performance and/or throughput limitation of the selected tunneling technology.*
 
-<img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217105352-680017ce-f617-4c10-ad70-c526c78c6447.png">
-
-add FW routing table
+<img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217193644-25942e56-1a0e-44c6-a59f-1a0f04da7d92.png">
 
 💡 And finally, end-to-end connectivity has been achieved, dynamically, without any UDR!
 
