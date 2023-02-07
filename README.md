@@ -151,7 +151,7 @@ I hope this series was of interest to you and helped you have a better understan
 The use cases addressed and solutions provided over the episodes can be combined to provide intermediate or extended scenarios:
 - Leveraging ARS for some Spoke VNETs while still keeping UDRs to implement FW bypass for some other Spoke VNETs.
 - Keeping it to static routing and UDRs between the 2 NVAs because the On-Prem prefixes and Azure ranges exchanged are too few in perspective of the relative complexity of a VxLAN/IpSec and BGP design or to avoid encapsulation & encryption overhead.
-- Providing connectivity between 2 Hub & Spoke environments by deploying an NVA and an ARS like in [this lab](https://github.com/cynthiatreger/double-hub-vnet-and-ars)
+- Providing connectivity between 2 Hub & Spoke environments by deploying an NVA and an ARS in each Hub like in [this lab](https://github.com/cynthiatreger/double-hub-vnet-and-ars)
 - etc
 
 *For a managed version of these deployments you can have a look at [Azure Virtual WAN](https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about).*
