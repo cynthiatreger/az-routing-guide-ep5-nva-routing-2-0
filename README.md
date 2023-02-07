@@ -156,9 +156,10 @@ The use cases addressed and solutions provided over the episodes can be combined
 
 *For a managed version of these deployments you can have a look at [Azure Virtual WAN](https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about).*
 
-And finally, let me share my 3 key take-aways:
-- Always make sure your data plane (*Effective routes*) is aligned with the control-plane (NVA routing table)
-- Consider the return traffic: it’s not traffic from A to B only, B has to find its way back to A too.
-- Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
+And finally, let me share my 4 key take-aways:
+➡️ Always make sure your data plane (*Effective routes*) is aligned with the control-plane (NVA routing table)
+➡️ Consider the return traffic: it’s not traffic from A to B only, B has to find its way back to A too.
+➡️ Whenever traffic is sent to an NVA, enable "IP forwarding" on the NVA NIC
+➡️ The *Gateway Transit* and *Gateway route propagation* settings only apply when a native Azure gateway (Expressroute or VPN Virtual Network Gateways) or Azure Route Server manages the route propagation.
 
 ## [< BACK TO THE MAIN MENU](https://github.com/cynthiatreger/az-routing-guide-intro)
