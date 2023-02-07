@@ -87,7 +87,7 @@ To understand its origin, we will analyse the packet walk for traffic originated
 
 This is not what we want. We need to reconfigure the FW NVA NIC with a UDR towards the On-Prem branches pointing to the Concentrator NVA NIC (10.0.10.4).
 
-Finally, when looking at the return path (from OnPrem to the Azure VNETs) and as per the Concentrator NVA *Effective routes*, traffic is forwarded based on direct peering connectivity directly to the Spoke VNETs, bypassing the FW NVA, which is not what we want either.
+Finally, when looking at the return path (from OnPrem to the Azure VNETs) and as per the Concentrator NVA *Effective routes*, traffic is forwarded based on default peering connectivity directly to the Spoke VNETs, bypassing the FW NVA, which is not what we want either.
 
 ➡️ Introducing ARS with chained NVAs is not as smooth as with a single NVA. BGP propagation of the On-Prem prefixes from the Concentrator NVA to the FW NVA to the ARS is useful for the Spoke VNETs creates issues between the 2 NVAs that need to be corrected. 
 
