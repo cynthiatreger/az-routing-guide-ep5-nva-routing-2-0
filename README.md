@@ -12,52 +12,50 @@
 ##
 # Previously...
 
-In the 2 last episodes we enabled connectivity end-to-end between Azure and branches connected to a non-Azure-native Concentrator ([Episode #3](https://github.com/cynthiatreger/az-routing-guide-ep3-nva-routing-fundamentals)) and then added FW inspection via a non-Azure-native FW ([Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)).
+In the 2 last episodes we enabled end-to-end connectivity between Azure and On-Prem branches connected to a non-Azure-native Concentrator ([Episode #3](https://github.com/cynthiatreger/az-routing-guide-ep3-nva-routing-fundamentals)) and then added FW inspection via a non-Azure-native Firewall ([Episode #4](https://github.com/cynthiatreger/az-routing-guide-ep4-chained-nvas)).
 
-We demonstrated that OS-level routing was not enough and that the NIC *Effective routes* of all the VMs in the local and peered VNETs had to be aligned using UDRs. These UDRs had to be applied on every subnet, using separate *Route tables* per environment (Spoke, FW NVA, Concentrator NVA), without any central point of configuration.
+We demonstrated that OS-level routing was not enough and that the NIC *Effective routes* of all the VMs in the local and peered VNETs had to be aligned to the NVA routing tables using UDRs. These UDRs had to be applied on every subnet, using separate Azure *Route tables* per environment (Spoke, FW NVA, Concentrator NVA), without any central point of configuration.
 
-For larger deployments with tens or even a few hundreds Spoke ranges and a variety of On-Prem prefixes, not always strictly aggregable under RFC1918, this can quickly become complex to both implement and operate.
+For larger deployments with tens or even a few hundreds of Spoke ranges and a variety of On-Prem prefixes, not always strictly aggregable under RFC1918, this can quickly become complex to both implement and operate.
 ##
 # 5.1. Benefits of Azure Route Server (ARS)
 
-the [Azure Route Server](https://learn.microsoft.com/en-us/azure/route-server/overview) (ARS) is a Azure resource deployed in a dedicated subnet (that must be name *RouteServerSubnet*) that acts like a Route Reflector and whos job is basically to align the control plane (NVA routing table) and the data-plane (*Effective routes*).
+The [Azure Route Server](https://learn.microsoft.com/en-us/azure/route-server/overview) (ARS) is an Azure resource deployed in a dedicated subnet (named *RouteServerSubnet*) that acts like a Route Reflector and whos job is basically to align the control plane (NVA routing table) and the data-plane (*Effective routes*).
 
 When deployed, the ARS can run BGP with an NVA and as a result will dynamically propagate and program the routing information received from this NVA in the *Effective routes* of all the VMs in the local and peered VNETs.
-The ARS also works the other way round and advertises the local and peered VNET ranges to its BGP-peered NVA.
+The ARS also works the other way round and advertises these VNET ranges to its BGP-peered NVA.
 
-When the ARS is deployed in a VNET with an Azure Virtual Network Gateway, iBGP is automatically run between them and can be enabled to provide branch-to-branch transit.
+When the ARS is used in a VNET with an Azure Virtual Network Gateway (VPN or ER), iBGP is automatically run between them to provide, if required, branch-to-branch transit (OFF by default).
 
-The ARS takes the control over from the Azure Virtual Network Gateways if any, and becomes the new controler of the Azure scope. Consequently, the *GW Transit* and *GW route propagation* settings apply to ARS.
+The ARS takes over the control from the Azure Virtual Network Gateways if any, and becomes the new controler of the Azure scope. Consequently, the *GW Transit* and *GW route propagation* settings apply to ARS, as we will see in the next section.
 
-⚠️ Please note the ARS is NOT in the data-path. For non-Azure-native scenarios, the ARS must be paired with an NVA to manage the traffic.
+⚠️ Please note the ARS is NOT in the data-path. For non-Azure-native scenarios, the ARS is paired with an NVA, and then attracts and forwards traffic through this NVA.
 
-In this episode we are going to address one of the many solutions ARS provides. If you would like to find out more about the routing scenarios leveraging ARS, please check out Mays' [ARS MicroHack](https://github.com/malgebary/Azure-Route-Server-MicroHack). 
-
-There is also Adam's great [video on ARS placement](https://youtu.be/eKRuJPjCR7o), for which I probably owe 50% of the current views. 
+In this episode we are going to address one of the many solutions ARS provides. If you would like to find out more about the routing scenarios leveraging ARS, please check out Mays' [ARS MicroHack](https://github.com/malgebary/Azure-Route-Server-MicroHack). There is also Adam's great [video on ARS placement](https://youtu.be/eKRuJPjCR7o), for which I probably owe 50% of the current views. 
 
 # 5.2. Single NVA and ARS (Episode #3-like topology)
 
-To illustrate the impact and power of ARS, we will start with an Episode #3 like environment, updated with an ARS: 
+To illustrate the impact and power of ARS, we will start with an Episode #3-like environment, updated with an ARS: 
 - 1 Hub VNET peered with 2 Spokes (Spoke1 and Spoke2)
     - *GW transit* enabled for Spoke1
     - *GW route propagation* disabled on Spoke1/subnet2
-    - *GW transit* disabled on the Spoke2 peering
+    - *GW transit* disabled for Spoke2
 - 1 Concentrator NVA for On-Prem branch connectivity
-- 1 ARS peered with Concentrator NVA
+- 1 ARS peered with the Concentrator NVA
 
 *All the *Route tables* and UDRs configured in the previous episodes have been removed, as well as the 10/8 static route configured on the Concentrator and advertised On-Prem for Azure reachability.*
 
 <img width="1120" alt="image" src="https://user-images.githubusercontent.com/110976272/216853300-9a5e1a53-b066-4e37-99bb-6b6a5795a72e.png">
 
-The whole Episode #3 lab has been completed in one step: On-Prem reachability has been extended to the ARS VNET and its the peered VNETs (like a Virtual Network Gateway would do), without any UDRs. 
+💡The whole Episode #3 lab has been completed in one step: On-Prem reachability has been propagated to the Hub VNET (hosting the ARS) and its the peered Spoke VNETs (like a Virtual Network Gateway would do), without any UDRs. 
 
-➡️ With just ARS and BGP runnig with the Concentrator we obtained automatic route propagation and programmation both at the NIC level and OS level: 
-- The effectives routes of the VMs in the ARS VNET and peered VNETs contain the Concentrator NVA's Branch prefixes
-- The Concentrator NVA routing table contains the appropriate VNETs ranges
+With just ARS and BGP running with the Concentrator we obtained automatic route propagation and programmation both at the NIC level and OS level for traffic steering through the Cocnentrator NVA: 
+- The *Effectives routes* of the VMs in the local VNET and peered VNETs contain the On-Prem branch prefixes, pointing to the Concentrator NVA NIC.
+- The Concentrator NVA routing table contains the appropriate VNETs ranges, that are further propagated to On-Prem.
 
-*GW transit* and *GW route propagation* are honored for NVA advertised prefixes as shown by the routes advertised from the ARS to the Concentrator NVA (Spoke2 range missing) and the *Effective routes* of Spoke1VM2 and Spoke2VM and confirmed by the failed pings.
+➡️ *GW transit* and *GW route propagation* are honored for NVA advertised prefixes as shown by the routes advertised from the ARS to the Concentrator NVA (Spoke2 range missing) and the *Effective routes* of Spoke1VM2 and Spoke2VM and confirmed by the failed pings.
 
-For the rest of this episode, we will focus on Spoke1/subnet1 only (GW Transit + GW route prop = ON)
+For the rest of this episode, we will focus on Spoke1/subnet1 only (both *GW Transit* and *GW route propagation* ON).
 
 # 5.3. Chained NVAs and ARS (Episode #4-like topology)
 
