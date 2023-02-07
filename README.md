@@ -4,11 +4,15 @@
 
 *Introduction note: This guide aims at providing a better understanding of the Azure routing mechanisms and how they translate from On-Prem networking. The focus will be on private routing in Hub & Spoke topologies. For clarity, network security and resiliency best practices as well as internet breakout considerations have been left out of this guide.*
 ##
-[5.1. ccc]()
+[5.1. Benefits of Azure Route Server (ARS)](https://github.com/cynthiatreger/az-routing-guide-ep5-nva-routing-2-0/blob/main/README.md#51-benefits-of-azure-route-server-ars)
 
-[5.2. dds]()
+[5.2. Single NVA and ARS (Episode #3-like topology)](https://github.com/cynthiatreger/az-routing-guide-ep5-nva-routing-2-0/blob/main/README.md#52-single-nva-and-ars-episode-3-like-topology)
 
-&emsp;[4.2.1. vvv]()
+[5.3. Chained NVAs and ARS (Episode #4-like topology)](https://github.com/cynthiatreger/az-routing-guide-ep5-nva-routing-2-0/blob/main/README.md#53-chained-nvas-and-ars-episode-4-like-topology)
+
+&emsp;[5.3.1. Chained NVAs and direct ARS plugin (and UDRs...)](https://github.com/cynthiatreger/az-routing-guide-ep5-nva-routing-2-0/blob/main/README.md#531-chained-nvas-and-direct-ars-plugin-and-udrs)
+
+&emsp;[5.3.2. Chained NVAs, ARS and VxLAN](https://github.com/cynthiatreger/az-routing-guide-ep5-nva-routing-2-0/blob/main/README.md#532-chained-nvas-ars-and-vxlan)
 ##
 # Previously...
 
@@ -49,7 +53,7 @@ To illustrate the impact and power of ARS, we will start with an Episode #3-like
 
 💡The whole Episode #3 lab has been completed in one step: On-Prem reachability has been propagated to the Hub VNET (hosting the ARS) and its the peered Spoke VNETs (like a Virtual Network Gateway would do), without any UDRs. 
 
-With just ARS and BGP running with the Concentrator we obtained automatic route propagation and programmation both at the NIC level and OS level for traffic steering through the Cocnentrator NVA: 
+With just ARS and BGP running with the Concentrator we obtained automatic route propagation and programming both at the NIC level and OS level for traffic steering through the Concentrator NVA: 
 - The *Effectives routes* of the VMs in the local VNET and peered VNETs contain the On-Prem branch prefixes, pointing to the Concentrator NVA NIC.
 - The Concentrator NVA routing table contains the appropriate VNETs ranges, that are further propagated to On-Prem.
 
@@ -120,11 +124,11 @@ Let's do the packet walk again:
     4. Traffic is forwarded to the branches.
 - On-Prem => Spoke1VM (destination = 10.1.1.4): the Concentrator NVA routing table directs the traffic towards Spoke1VM to its NIC, containing a *User* entry pointing to the FW NVA NIC, where default VNET peering routing will take the traffic to the Spoke1VM directly.
 
-Compared to the solution proposed in Episode #4, the ARS manages the Spoke VMs routing, limiting the need of UDRs to the FW NVA and the Conczentrator NVA only. However this solution goes against the dynamic routing principles of BGP, requiring to enforce all the VNET ranges and the BGP learnt On-Prem prefixes with UDRs, in numbers that can quickly build up.
+Compared to the solution proposed in Episode #4, the ARS manages the Spoke VMs routing, limiting the need of UDRs to the FW NVA and the Concentrator NVA only. However this solution goes against the dynamic routing principles of BGP, requiring to enforce all the VNET ranges and the BGP learnt On-Prem prefixes with UDRs, in numbers that can quickly build up.
 
 ## 5.3.2. Chained NVAs, ARS and VxLAN
 
-### 5.3.2.1. Tunneling technique
+### 5.3.2.1. Tunnelling technique
 
 Instead of implementing UDRs to provide data-plane connectivity between the FW NVA and the Concentrator NVA for all the individual Spoke ranges and On-Prem prefixes, we can also consider using a tunnel between these 2 NVAs and between which there is already default VNET connectivity. BGP will get established inside this tunnel.
 
@@ -134,9 +138,9 @@ When using encapsulation, the On-Prem traffic is hidden inside packets having no
 
 In return, the On-Prem traffic destined to the Spokes (destination Spoke1VM = 10.1.1.4) is encapsulated by the Concentrator NVA, sent to its NIC with the destination being now the FW tunnel endpoint (10.0.0.5) for which there is also direct VNET connectivity.
 
-VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunneling technologies*.
+VxLAN encapsulation protocol is used below, but the same can be achieved with IPSec or other tunnelling technologies*.
 
-* *Make sure to check the potential performance and/or throughput limitation of the selected tunneling technology.*
+* *Make sure to check the potential performance and/or throughput limitation of the selected tunnelling technology.*
 
 <img width="1100" alt="image" src="https://user-images.githubusercontent.com/110976272/217193644-25942e56-1a0e-44c6-a59f-1a0f04da7d92.png">
 
