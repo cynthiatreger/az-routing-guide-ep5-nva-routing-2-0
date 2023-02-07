@@ -108,7 +108,7 @@ Again, a UDR matching the Spoke ranges would be required on the FW and Concentra
 
 ### 5.3.1.4. UDR adjusted connectivity diagram
 
-<img width="1142" alt="image" src="https://user-images.githubusercontent.com/110976272/217070251-f9a6e4d9-eb9a-4b41-91f8-4e3ff43a8bca.png">
+<img width="1096" alt="image" src="https://user-images.githubusercontent.com/110976272/217194273-5c5aec38-b95c-4e51-823e-aa6a5a886dbd.png">
 
 The targeted connectivity has been achieved.
 
